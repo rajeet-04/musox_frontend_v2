@@ -8,12 +8,13 @@ import { AppTheme } from './colors';
 import * as storage from './storage';
 import { useDownload } from './DownloadContext';
 import { TrackListItem } from './components/TrackListItem';
-
+import { usePlayer } from './PlayerContext';
 export default function DownloadsScreen({ navigation }) {
     const { downloadQueue } = useDownload();
     const [downloadedTracks, setDownloadedTracks] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    
+    const { playTrack } = usePlayer();
+
     // State for multi-select
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [selectedTracks, setSelectedTracks] = useState(new Set());
@@ -140,6 +141,7 @@ export default function DownloadsScreen({ navigation }) {
                                     toggleSelection(item.id);
                                 } else {
                                     // Handle regular press (e.g., play track)
+                                    playTrack(item);
                                 }
                             }}
                         />

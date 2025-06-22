@@ -72,7 +72,8 @@ export default function SearchScreen({ navigation }) {
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-
+  
+const { playTrack } = usePlayer();
 const handleSearch = () => {
   handleSmartSearch(query, setSearchResults, setIsLoading);
 };
@@ -81,7 +82,6 @@ const handleSearch = () => {
 
   if (searchResults) {
     const { tracks, albums, artists, playlists } = searchResults;
-    const { playTrack } = usePlayer();
     const allTracks = (tracks?.items || []).filter(Boolean);
     if (allTracks.length > 0) {
       sections.push({

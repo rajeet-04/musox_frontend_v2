@@ -7,6 +7,7 @@
 // ============================================================================
 // Configuration
 // ============================================================================
+// const FIREBASE_BASE_URL = 'https://us-central1-musox-v2.cloudfunctions.net';
 const FIREBASE_BASE_URL = 'https://us-central1-musox-v2.cloudfunctions.net';
 const CLOUDFLARE_DOWNLOADER_URL = 'https://f85a8dfd-musox-downloader.musox.workers.dev/download';
 
