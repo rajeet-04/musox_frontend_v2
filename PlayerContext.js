@@ -1,7 +1,8 @@
-import React, { createContext, useState, useContext, useRef } from 'react';
+import React, { createContext, useState, useContext, useRef, useEffect } from 'react';
 import { Audio } from 'expo-av';
 import { getDownloadedTracks } from './storage';
 import { downloadAndStoreTrack } from './downloader';
+
 
 const PlayerContext = createContext();
 
@@ -10,7 +11,19 @@ export const usePlayer = () => useContext(PlayerContext);
 export const PlayerProvider = ({ children }) => {
   const [currentTrack, setCurrentTrack] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const soundRef = useRef(null);
+  const soundRef = useRef(new Audio.Sound());
+
+    useEffect(() => {
+  Audio.setAudioModeAsync({
+    allowsRecordingIOS: false,
+    staysActiveInBackground: true,
+    interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DO_NOT_MIX,
+    playsInSilentModeIOS: true,
+    shouldDuckAndroid: true,
+    interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DO_NOT_MIX,
+    playThroughEarpieceAndroid: false,
+  });
+}, []);
 
   const loadAndPlay = async (track) => {
     if (soundRef.current) {
@@ -81,7 +94,11 @@ export const PlayerProvider = ({ children }) => {
     setIsPlaying(false);
   };
 
+
+
+
   return (
+    
     <PlayerContext.Provider
       value={{
         currentTrack,
@@ -95,4 +112,5 @@ export const PlayerProvider = ({ children }) => {
       {children}
     </PlayerContext.Provider>
   );
+  
 };

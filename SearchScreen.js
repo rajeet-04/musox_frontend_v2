@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppTheme } from './colors';
 import * as spotify from './spotify';
 import { handleSmartSearch } from './handleSmartSearch';
-
+import { usePlayer } from './PlayerContext';
 import { TrackListItem } from './components/TrackListItem';
 
 
@@ -81,13 +81,13 @@ const handleSearch = () => {
 
   if (searchResults) {
     const { tracks, albums, artists, playlists } = searchResults;
-
+    const { playTrack } = usePlayer();
     const allTracks = (tracks?.items || []).filter(Boolean);
     if (allTracks.length > 0) {
       sections.push({
         title: 'Tracks',
         data: allTracks,
-        renderItem: ({ item }) => <TrackListItem track={item} onPress={() => console.log('Play', item.name)} />, 
+        renderItem: ({ item }) => <TrackListItem track={item} onPress={() => playTrack(item)} />, 
       });
     }
 
