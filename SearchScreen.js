@@ -16,7 +16,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { AppTheme } from './colors';
 import * as spotify from './spotify';
+import { handleSmartSearch } from './handleSmartSearch';
+
 import { TrackListItem } from './components/TrackListItem';
+
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const fallbackImage = require('./assets/icon.png');
@@ -70,20 +73,9 @@ export default function SearchScreen({ navigation }) {
   const [searchResults, setSearchResults] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSearch = async () => {
-    if (!query.trim()) return;
-    setIsLoading(true);
-    setSearchResults(null);
-    try {
-      const results = await spotify.search(query);
-      setSearchResults(results);
-    } catch (e) {
-      console.error("Failed to fetch search results:", e);
-      Alert.alert('Error', 'Failed to fetch search results. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+const handleSearch = () => {
+  handleSmartSearch(query, setSearchResults, setIsLoading);
+};
 
   const sections = [];
 

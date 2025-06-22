@@ -88,6 +88,7 @@ export const processPlaylist = (playlistUrl) => {
  * @param {string[]} trackIds An array of Spotify track IDs.
  */
 export const processTrackBatch = (trackIds) => {
+    console.log(trackIds)
     return fetch(`${FIREBASE_BASE_URL}/processBatch`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -167,6 +168,7 @@ export const getDownloadInfo = async (videoId) => {
         const key = await getSanityKey();
         const conversionInfo = await startConversion(videoId, key);
         console.log('[Download] Primary Method Successful!');
+        console.log(conversionInfo)
         return conversionInfo;
     } catch (error) {
         console.warn(`[Download] Primary Method Failed: ${error.message}. Triggering fallback.`);
@@ -179,6 +181,7 @@ export const getDownloadInfo = async (videoId) => {
             });
             if (!response.ok) throw new Error('Fallback downloader service also failed');
             console.log('[Download] Fallback Method Successful!');
+            console.log(response)
             return response.json();
         } catch (fallbackError) {
             console.error(`[Download] Fallback Method Failed: ${fallbackError.message}`);

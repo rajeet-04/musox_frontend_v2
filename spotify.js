@@ -98,7 +98,7 @@ export const search = async (query) => {
     const encodedQuery = encodeURIComponent(query);
     // Updated type to include 'artist' for comprehensive search results
     const type = "track,album,playlist,artist"; 
-    const url = `https://api.spotify.com/v1/search?q=${encodedQuery}&type=${type}&limit=10`; // Increased limit to ensure enough items for sections
+    const url = `https://api.spotify.com/v1/search?q=${encodedQuery}&type=${type}&limit=10&market=US`; // Increased limit to ensure enough items for sections
     return _makeApiCall(url);
 };
 

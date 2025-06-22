@@ -92,8 +92,8 @@ export default function HomeScreen({ navigation }) {
         );
     }
 
-    // Display empty state if no data is loaded
-    if (recents.length === 0) { // Only check recents now
+    
+    if (recents.length === 0) { 
         return (
             <SafeAreaView style={styles.screenContainer}>
                 <View style={styles.emptyContainer}>

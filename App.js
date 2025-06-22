@@ -15,6 +15,9 @@ import { AppTheme } from './colors';
 import AlbumDetailsScreen from './components/AlbumDetailsScreen';
 import ArtistDetailsScreen from './components/ArtistDetailsScreen';
 import PlaylistDetailsScreen from './components/PlaylistDetailsScreen';
+import { Buffer } from 'buffer';
+global.Buffer = Buffer;
+
 
 const Stack = createNativeStackNavigator();
 
@@ -73,13 +76,13 @@ export default function App() {
         <DownloadProvider>
           <NavigationContainer theme={MusoxTheme}>
             <Stack.Navigator>
-              {/* AppLayout contains the Tab.Navigator */}
+             
               <Stack.Screen
                 name="AppLayout"
                 component={AppLayout}
                 options={{ headerShown: false }}
               />
-              {/* Detail screens are direct siblings in the stack */}
+              
               <Stack.Screen
                 name="AlbumDetails"
                 component={AlbumDetailsScreen}
