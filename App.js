@@ -17,6 +17,7 @@ import { AppTheme } from './colors';
 import AlbumDetailsScreen from './components/AlbumDetailsScreen';
 import ArtistDetailsScreen from './components/ArtistDetailsScreen';
 import PlaylistDetailsScreen from './components/PlaylistDetailsScreen';
+import UserPlaylistScreen from './UserPlaylistScreen';
 
 global.Buffer = Buffer;
 const Stack = createNativeStackNavigator();
@@ -41,6 +42,7 @@ const AppContent = () => {
                     <Stack.Screen name="AlbumDetails" component={AlbumDetailsScreen} />
                     <Stack.Screen name="ArtistDetails" component={ArtistDetailsScreen} />
                     <Stack.Screen name="PlaylistDetails" component={PlaylistDetailsScreen}/>
+                    <Stack.Screen  name="UserPlaylist"  component={UserPlaylistScreen}  options={{ headerShown: false }}/>
                 </Stack.Navigator>
             </NavigationContainer>
 

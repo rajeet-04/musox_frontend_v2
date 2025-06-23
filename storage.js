@@ -202,3 +202,43 @@ export const logSongPlay = async (trackId) => {
         console.error(`Failed to log play for track ${trackId}:`, e);
     }
 };
+
+export const addTracksToPlaylist = async (playlistId, trackIds) => {
+  if (!playlistId || !trackIds || trackIds.length === 0) return;
+  try {
+    const playlists = await getPlaylists();
+    const playlistIndex = playlists.findIndex(p => p.id === playlistId);
+    if (playlistIndex === -1) throw new Error(`Playlist ${playlistId} not found.`);
+    
+    const existingTrackIds = new Set(playlists[playlistIndex].trackIds);
+    trackIds.forEach(trackId => {
+      if (!existingTrackIds.has(trackId)) {
+        playlists[playlistIndex].trackIds.push(trackId);
+      }
+    });
+    
+    await AsyncStorage.setItem(PLAYLIST_DB_KEY, JSON.stringify(playlists));
+    console.log(`[Storage] Added ${trackIds.length} tracks to playlist ${playlistId}`);
+  } catch (e) {
+    console.error('Failed to add tracks to playlist.', e);
+  }
+};
+
+export const removeTracksFromPlaylist = async (playlistId, trackIdsToRemove) => {
+  if (!playlistId || !trackIdsToRemove || trackIdsToRemove.length === 0) return;
+  try {
+    const playlists = await getPlaylists();
+    const playlistIndex = playlists.findIndex(p => p.id === playlistId);
+    if (playlistIndex === -1) return;
+
+    const tracksToRemoveSet = new Set(trackIdsToRemove);
+    playlists[playlistIndex].trackIds = playlists[playlistIndex].trackIds.filter(
+      id => !tracksToRemoveSet.has(id)
+    );
+
+    await AsyncStorage.setItem(PLAYLIST_DB_KEY, JSON.stringify(playlists));
+    console.log(`[Storage] Removed ${trackIdsToRemove.length} tracks from playlist ${playlistId}`);
+  } catch (e) {
+    console.error('Failed to remove tracks from playlist.', e);
+  }
+};
