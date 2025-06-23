@@ -1,3 +1,4 @@
+//SearchScreen.js
 import React, { useState } from 'react';
 import {
   StyleSheet,
@@ -223,7 +224,7 @@ const styles = StyleSheet.create({
   cardText: { color: AppTheme.colors.text, fontWeight: '600', fontSize: 14, width: '100%' },
   cardSubtext: { color: '#A0A0A0', fontSize: 12, marginTop: 2, width: '100%' },
   artistGridCardItem: { width: '100%', alignItems: 'center', paddingVertical: 8 },
-  artistGridImage: { width: 130, height: 130, borderRadius: 999, marginBottom: 8 },
+  artistGridImage: { width: 130, height: 130, borderRadius: 99, marginBottom: 8 },
   artistGridText: { color: AppTheme.colors.text, fontWeight: '600', fontSize: 14, textAlign: 'center', width: '100%' },
   artistGridSubtext: { color: '#A0A0A0', fontSize: 12, marginTop: 2, textAlign: 'center', width: '100%' },
   horizontalSectionListContent: { paddingHorizontal: 16 },

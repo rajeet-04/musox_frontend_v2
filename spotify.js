@@ -149,14 +149,26 @@ export const getPlaylist = async (playlistId) => {
  * @param {string} artistId The Spotify artist ID.
  * @returns {Promise<{topTracks: Array<object>, albums: Array<object>}>}
  */
+
+// In spotify.js
+
 export const getArtist = async (artistId) => {
+    console.log(artistId)
+    // Fetch artist profile, top tracks, and albums all at once
+    const artistProfilePromise = _makeApiCall(`https://api.spotify.com/v1/artists/${artistId}`);
     const topTracksPromise = _makeApiCall(`https://api.spotify.com/v1/artists/${artistId}/top-tracks?market=US`);
     const albumsPromise = _makeApiCall(`https://api.spotify.com/v1/artists/${artistId}/albums?include_groups=album,single&limit=50`);
 
-    const [topTracksResponse, albumsResponse] = await Promise.all([topTracksPromise, albumsPromise]);
+    const [artistProfile, topTracksResponse, albumsResponse] = await Promise.all([
+        artistProfilePromise,
+        topTracksPromise,
+        albumsPromise,
+    ]);
 
+    // Combine all the data into a single object
     return {
-        topTracks: topTracksResponse.tracks.slice(0, 5), // Limit to top 5 tracks
+        ...artistProfile, // This includes name, images, followers, etc.
+        topTracks: topTracksResponse.tracks.slice(0, 5),
         albums: albumsResponse.items
     };
 };

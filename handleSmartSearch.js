@@ -1,14 +1,7 @@
-// This logic adds intelligence to the search bar in SearchScreen
-// It detects Spotify URLs and calls respective backend APIs for instant processing
-
 import * as spotify from './spotify';
 import * as api from './api';
+import { Alert } from 'react-native';
 
-/**
- * Detects and parses Spotify URLs.
- * @param {string} query
- * @returns {{ type: 'track'|'album'|'playlist'|'artist'|null, id: string|null }}
- */
 const parseSpotifyUrl = (query) => {
   try {
     const url = new URL(query);
@@ -22,10 +15,6 @@ const parseSpotifyUrl = (query) => {
   return { type: null, id: null };
 };
 
-/**
- * Smart handler for search queries.
- * Calls Spotify search or backend processor depending on input.
- */
 export const handleSmartSearch = async (query, setSearchResults, setIsLoading) => {
   const { type, id } = parseSpotifyUrl(query);
 
@@ -42,16 +31,17 @@ export const handleSmartSearch = async (query, setSearchResults, setIsLoading) =
         setSearchResults({ tracks: { items: [track] } });
       } else if (type === 'album') {
         const tracks = await spotify.getAlbum(id);
-        await api.processAlbum(query); // Send full URL
+        await api.processAlbum(query);
         setSearchResults({ tracks: { items: tracks } });
       } else if (type === 'playlist') {
         const tracks = await spotify.getPlaylist(id);
         await api.processPlaylist(query);
         setSearchResults({ tracks: { items: tracks } });
       } else if (type === 'artist') {
-        const artist = await spotify.getArtist(id);
-        // console.log(artist)
-        setSearchResults({ artists: { items: [artist] } });
+        // With the updated spotify.getArtist, this now fetches the complete artist object
+        const completeArtistData = await spotify.getArtist(id);
+        // The search results expect an 'items' array, so we wrap the single artist object in an array
+        setSearchResults({ artists: { items: [completeArtistData] } });
       }
     } else {
       const results = await spotify.search(query);
