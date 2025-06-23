@@ -1,34 +1,42 @@
 import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { AppTheme } from '../colors'; // Adjust path if necessary
+import { AppTheme } from '../colors';
 
-export const TrackListItem = ({
+const TrackListItemComponent = ({
   track,
   onPress,
   onLongPress,
   isSelectionMode,
   isSelected,
 }) => {
-  // Determine the image URI: prioritize local thumbnail, then Spotify album art, then a placeholder
   const imageUri = track.thumbnailUri 
     || track.album?.images?.[0]?.url 
-    || 'https://placehold.co/64x64/1F2F3A/FFFFFF?text=?'; // Fallback placeholder
+    || 'https://placehold.co/64x64/1F2F3A/FFFFFF?text=?';
 
-  // Determine the track title: prioritize local name, then Spotify name
-  const title = track.spotifySongName || track.name;
+  const title = track.name;
 
-  // Determine the artist(s): prioritize local artists, then Spotify artists, then 'Unknown Artist'
-  const artists = Array.isArray(track.spotifyArtists) 
-    ? track.spotifyArtists.join(', ') 
-    : (Array.isArray(track.artists) 
-        ? track.artists.map(a => a.name).join(', ') 
-        : 'Unknown Artist'
-      );
+  // This function now correctly handles both artist array formats.
+  const getArtistNames = (artistsArray) => {
+    if (!Array.isArray(artistsArray) || artistsArray.length === 0) {
+      return 'Unknown Artist';
+    }
+    // Format 1: ["Artist A", "Artist B"]
+    if (typeof artistsArray[0] === 'string') {
+      return artistsArray.join(', ');
+    }
+    // Format 2: [{ name: "Artist A" }, { name: "Artist B" }]
+    if (typeof artistsArray[0] === 'object' && artistsArray[0] !== null) {
+      return artistsArray.map(a => a.name).filter(Boolean).join(', ');
+    }
+    return 'Unknown Artist';
+  };
+
+  const artists = getArtistNames(track.artists);
 
   const containerStyle = [
     styles.container,
-    isSelected && { backgroundColor: AppTheme.colors.card },
+    isSelected && styles.selectedContainer,
   ];
 
   return (
@@ -61,6 +69,8 @@ export const TrackListItem = ({
   );
 };
 
+export const TrackListItem = React.memo(TrackListItemComponent);
+
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
@@ -68,6 +78,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 10,
     borderRadius: 8,
+  },
+  selectedContainer: {
+    backgroundColor: AppTheme.colors.card,
   },
   thumbnail: {
     width: 50,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useLayoutEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useLayoutEffect } from 'react';
 import { StyleSheet, Text, View, Image, FlatList, ActivityIndicator, TouchableOpacity, Modal, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -11,6 +11,7 @@ import { usePlayer } from './PlayerContext';
 
 const DEFAULT_IMAGE = 'https://placehold.co/200/1F2F3A/121212?text=?';
 
+// A new component for the "Add Songs" modal
 const AddSongsModal = ({ isVisible, onClose, onAdd, existingTrackIds }) => {
     const [allTracks, setAllTracks] = useState([]);
     const [selectedToAdd, setSelectedToAdd] = useState(new Set());
@@ -21,22 +22,20 @@ const AddSongsModal = ({ isVisible, onClose, onAdd, existingTrackIds }) => {
                 const tracksObj = await storage.getDownloadedTracks();
                 const availableTracks = Object.values(tracksObj).filter(t => !existingTrackIds.has(t.id));
                 setAllTracks(availableTracks);
-                setSelectedToAdd(new Set());
+                setSelectedToAdd(new Set()); // Reset selection when modal opens
             };
             fetchAllTracks();
         }
     }, [isVisible, existingTrackIds]);
 
     const toggleSelection = (trackId) => {
-        setSelectedToAdd(prev => {
-            const updated = new Set(prev);
-            if (updated.has(trackId)) {
-                updated.delete(trackId);
-            } else {
-                updated.add(trackId);
-            }
-            return updated;
-        });
+        const newSelection = new Set(selectedToAdd);
+        if (newSelection.has(trackId)) {
+            newSelection.delete(trackId);
+        } else {
+            newSelection.add(trackId);
+        }
+        setSelectedToAdd(newSelection);
     };
 
     const handleAddSongs = () => {
@@ -74,6 +73,7 @@ const AddSongsModal = ({ isVisible, onClose, onAdd, existingTrackIds }) => {
     );
 };
 
+
 export default function UserPlaylistScreen({ route, navigation }) {
     const { playlist: initialPlaylist } = route.params;
     const { playTrack } = usePlayer();
@@ -81,12 +81,12 @@ export default function UserPlaylistScreen({ route, navigation }) {
     const [playlist, setPlaylist] = useState(initialPlaylist);
     const [tracks, setTracks] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [selectedTracks, setSelectedTracks] = useState(new Set());
     const [isAddModalVisible, setAddModalVisible] = useState(false);
-
+    
     const isAllSongsPlaylist = playlist.id === 'all-songs';
-    const isMounted = useRef(false);
 
     const loadPlaylistTracks = useCallback(async () => {
         setIsLoading(true);
@@ -99,7 +99,9 @@ export default function UserPlaylistScreen({ route, navigation }) {
             } else {
                 const currentPlaylists = await storage.getPlaylists();
                 const updatedPlaylist = currentPlaylists.find(p => p.id === playlist.id) || playlist;
-                setPlaylist(updatedPlaylist);
+                if (JSON.stringify(updatedPlaylist) !== JSON.stringify(playlist)) {
+                    setPlaylist(updatedPlaylist);
+                }
                 finalTracks = updatedPlaylist.trackIds.map(id => allTracksFromStorage[id]).filter(Boolean);
             }
             setTracks(finalTracks);
@@ -110,16 +112,11 @@ export default function UserPlaylistScreen({ route, navigation }) {
         }
     }, [playlist.id, isAllSongsPlaylist]);
 
-    useFocusEffect(
-        useCallback(() => {
-            if (!isMounted.current) {
-                isMounted.current = true;
-                loadPlaylistTracks();
-            }
-            return () => {};
-        }, [loadPlaylistTracks])
-    );
-
+    // Load data once when the component mounts
+    useEffect(() => {
+        loadPlaylistTracks();
+    }, [loadPlaylistTracks]);
+    
     const handleLongPress = (trackId) => {
         if (isAllSongsPlaylist) return;
         setIsSelectionMode(true);
@@ -127,22 +124,20 @@ export default function UserPlaylistScreen({ route, navigation }) {
     };
 
     const toggleSelection = (trackId) => {
-        setSelectedTracks(prev => {
-            const newSelection = new Set(prev);
-            if (newSelection.has(trackId)) {
-                newSelection.delete(trackId);
-            } else {
-                newSelection.add(trackId);
-            }
-            return newSelection;
-        });
+        const newSelection = new Set(selectedTracks);
+        if (newSelection.has(trackId)) {
+            newSelection.delete(trackId);
+        } else {
+            newSelection.add(trackId);
+        }
+        setSelectedTracks(newSelection);
     };
-
+    
     const cancelSelection = () => {
         setIsSelectionMode(false);
         setSelectedTracks(new Set());
     };
-
+    
     const handleDeleteSelected = () => {
         Alert.alert("Delete Songs", `Remove ${selectedTracks.size} song(s) from this playlist?`, [
             { text: "Cancel", style: "cancel" },
@@ -150,8 +145,8 @@ export default function UserPlaylistScreen({ route, navigation }) {
                 text: "Remove", style: "destructive",
                 onPress: async () => {
                     await storage.removeTracksFromPlaylist(playlist.id, Array.from(selectedTracks));
-                    cancelSelection();
                     setTracks(current => current.filter(t => !selectedTracks.has(t.id)));
+                    cancelSelection();
                 },
             },
         ]);
@@ -159,9 +154,9 @@ export default function UserPlaylistScreen({ route, navigation }) {
 
     const handleAddSongs = async (trackIdsToAdd) => {
         await storage.addTracksToPlaylist(playlist.id, trackIdsToAdd);
-        loadPlaylistTracks();
+        await loadPlaylistTracks();
     };
-
+    
     useLayoutEffect(() => {
         navigation.setOptions({
             headerRight: () => {
@@ -172,7 +167,7 @@ export default function UserPlaylistScreen({ route, navigation }) {
                             <TouchableOpacity onPress={handleDeleteSelected} style={{marginRight: 15}}>
                                 <Ionicons name="trash-outline" size={24} color={AppTheme.colors.notification} />
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={cancelSelection}>
+                             <TouchableOpacity onPress={cancelSelection}>
                                 <Ionicons name="close-circle-outline" size={26} color={AppTheme.colors.text} />
                             </TouchableOpacity>
                         </View>
@@ -184,14 +179,14 @@ export default function UserPlaylistScreen({ route, navigation }) {
                     </TouchableOpacity>
                 );
             },
-            headerTitle: isSelectionMode ? `${selectedTracks.size} selected` : playlist.name,
-            headerShown: true,
-            headerTransparent: true,
-            headerLeft: () => (
-                <TouchableOpacity onPress={() => navigation.goBack()} style={{ paddingRight: 10 }}>
+             headerTitle: isSelectionMode ? `${selectedTracks.size} selected` : playlist.name,
+             headerShown: true,
+             headerTransparent: true,
+             headerLeft: () => (
+                 <TouchableOpacity onPress={() => navigation.goBack()} style={{ paddingRight: 10 }}>
                     <Ionicons name="chevron-back" size={30} color={AppTheme.colors.text} />
-                </TouchableOpacity>
-            ),
+                 </TouchableOpacity>
+             ),
         });
     }, [navigation, isSelectionMode, selectedTracks, playlist.name, isAllSongsPlaylist]);
 
@@ -203,13 +198,13 @@ export default function UserPlaylistScreen({ route, navigation }) {
 
     return (
         <SafeAreaView style={styles.screenContainer}>
-            <AddSongsModal
+             <AddSongsModal
                 isVisible={isAddModalVisible}
                 onClose={() => setAddModalVisible(false)}
                 onAdd={handleAddSongs}
                 existingTrackIds={new Set(tracks.map(t => t.id))}
             />
-
+            
             <FlatList
                 data={tracks}
                 keyExtractor={(item) => item.id}
@@ -237,9 +232,9 @@ export default function UserPlaylistScreen({ route, navigation }) {
                     />
                 )}
                 ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
+                     <View style={styles.emptyContainer}>
                         {!isLoading && <Text style={styles.noContentText}>This playlist is empty. Tap '+' to add songs.</Text>}
-                    </View>
+                     </View>
                 }
                 ListFooterComponent={<View style={{ height: 150 }} />}
                 contentContainerStyle={{ paddingHorizontal: 16 }}
@@ -254,12 +249,26 @@ const styles = StyleSheet.create({
     screenContainer: { flex: 1, backgroundColor: AppTheme.colors.background },
     headerActions: { flexDirection: 'row' },
     noContentText: { color: '#A0A0A0', textAlign: 'center', fontSize: 16 },
-    emptyContainer: { paddingTop: 40, alignItems: 'center' },
-    playlistHeader: { alignItems: 'center', paddingTop: 80 },
-    playlistArtworkGrid: { flexDirection: 'row', flexWrap: 'wrap', width: 200, height: 200, backgroundColor: AppTheme.colors.border, borderRadius: 12, overflow: 'hidden', marginBottom: 20 },
+    emptyContainer: {
+        paddingTop: 40,
+        alignItems: 'center',
+    },
+    // Playlist Header
+    playlistHeader: { alignItems: 'center', paddingTop: 80 }, // Add padding top to clear navigator
+    playlistArtworkGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        width: 200,
+        height: 200,
+        backgroundColor: AppTheme.colors.border,
+        borderRadius: 12,
+        overflow: 'hidden',
+        marginBottom: 20,
+    },
     playlistArtwork: { width: '50%', height: '50%' },
     playlistTitle: { fontSize: 28, fontWeight: 'bold', color: AppTheme.colors.text, textAlign: 'center', marginBottom: 5 },
     playlistMeta: { fontSize: 14, color: '#A0A0A0', textAlign: 'center' },
+    // Modal Styles
     modalContainer: { flex: 1, backgroundColor: AppTheme.colors.background },
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 },
     modalTitle: { fontSize: 22, fontWeight: 'bold', color: AppTheme.colors.text },

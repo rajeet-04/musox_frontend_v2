@@ -1,40 +1,41 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { StyleSheet, View, Text, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { usePlayer } from './PlayerContext';
+import { usePlayer, usePlaybackStatus } from './PlayerContext';
 import { AppTheme } from './colors';
 
-export default function MiniPlayer({ onPlayerPress }) {
-  const { currentTrack, isPlaying, pauseTrack, resumeTrack, playbackStatus } = usePlayer();
+function MiniPlayerComponent({ onPlayerPress }) {
+  // Use both hooks: one for stable data, one for frequent updates
+  const { currentTrack, isPlaying, pauseTrack, resumeTrack } = usePlayer();
+  const playbackStatus = usePlaybackStatus();
+  
   const insets = useSafeAreaInsets();
 
-  if (!currentTrack) {
-    return null;
-  }
+  if (!currentTrack) return null;
 
-  const playerBottom = insets.bottom + 60; // Adjust as needed
   const progress = (playbackStatus?.positionMillis || 0) / (playbackStatus?.durationMillis || 1);
+  const playerBottom = insets.bottom + 60;
 
   return (
-    <TouchableOpacity onPress={onPlayerPress} style={[styles.container, { bottom: playerBottom }]}>
-        <View style={styles.content}>
-            <Image
-            source={{ uri: currentTrack.thumbnailUri || 'https://placehold.co/44x44/1F2F3A/FFFFFF?text=?' }}
-            style={styles.image}
-            />
-            <View style={styles.info}>
-            <Text style={styles.name} numberOfLines={1}>{currentTrack.name}</Text>
-            <Text style={styles.artist} numberOfLines={1}>{currentTrack.artists?.join(', ')}</Text>
-            </View>
-            <TouchableOpacity onPress={isPlaying ? pauseTrack : resumeTrack} style={styles.button}>
-            <Ionicons name={isPlaying ? 'pause' : 'play'} size={28} color={AppTheme.colors.text} />
-            </TouchableOpacity>
+    <TouchableOpacity onPress={onPlayerPress} style={[styles.container, { bottom: playerBottom }]}> 
+      <View style={styles.content}>
+        <Image
+          source={{ uri: currentTrack.thumbnailUri || 'https://placehold.co/44x44/1F2F3A/FFFFFF?text=?' }}
+          style={styles.image}
+        />
+        <View style={styles.info}>
+          <Text style={styles.name} numberOfLines={1}>{currentTrack.name}</Text>
+          <Text style={styles.artist} numberOfLines={1}>{currentTrack.artists?.join(', ')}</Text>
         </View>
-        <View style={styles.progressBarContainer}>
-            <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
-        </View>
+        <TouchableOpacity onPress={isPlaying ? pauseTrack : resumeTrack} style={styles.button}>
+          <Ionicons name={isPlaying ? 'pause' : 'play'} size={28} color={AppTheme.colors.text} />
+        </TouchableOpacity>
+      </View>
+      <View style={styles.progressBarContainer}>
+        <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
+      </View>
     </TouchableOpacity>
   );
 }
@@ -92,3 +93,5 @@ const styles = StyleSheet.create({
     backgroundColor: AppTheme.colors.primary,
   },
 });
+
+export default memo(MiniPlayerComponent);
