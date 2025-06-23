@@ -7,14 +7,14 @@ import * as api from './api';
 /**
  * Detects and parses Spotify URLs.
  * @param {string} query
- * @returns {{ type: 'track'|'album'|'playlist'|null, id: string|null }}
+ * @returns {{ type: 'track'|'album'|'playlist'|'artist'|null, id: string|null }}
  */
 const parseSpotifyUrl = (query) => {
   try {
     const url = new URL(query);
     if (url.hostname.includes('spotify.com')) {
       const [, type, id] = url.pathname.split('/');
-      if (['track', 'album', 'playlist'].includes(type) && id) {
+      if (['track', 'album', 'playlist', 'artist'].includes(type) && id) {
         return { type, id };
       }
     }
@@ -48,6 +48,10 @@ export const handleSmartSearch = async (query, setSearchResults, setIsLoading) =
         const tracks = await spotify.getPlaylist(id);
         await api.processPlaylist(query);
         setSearchResults({ tracks: { items: tracks } });
+      } else if (type === 'artist') {
+        const artist = await spotify.getArtist(id);
+        // console.log(artist)
+        setSearchResults({ artists: { items: [artist] } });
       }
     } else {
       const results = await spotify.search(query);
