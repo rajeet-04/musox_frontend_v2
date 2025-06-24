@@ -21,7 +21,7 @@ import { TrackListItem } from './components/TrackListItem';
 
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const fallbackImage = require('./assets/icon.png');
+const fallbackImage = 'https://placehold.co/500x500.png';
 
 // --- Component Definitions ---
 

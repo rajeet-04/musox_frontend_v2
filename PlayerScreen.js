@@ -60,10 +60,13 @@ export default function PlayerScreen({ isVisible, onClose }) {
   const [lyrics, setLyrics] = useState([]);
   const [activeLyricIndex, setActiveLyricIndex] = useState(-1);
   const [isLoadingLyrics, setIsLoadingLyrics] = useState(false);
+  const [lyricsContainerHeight, setLyricsContainerHeight] = useState(0); // State to hold the height of the lyrics view
   const slideAnimation = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const fadeAnimation = useRef(new Animated.Value(0)).current;
+
+  // Refs for scrolling logic
   const lyricsScrollViewRef = useRef(null);
-  const lyricLineRefs = useRef([]);
+  const lyricLayoutsRef = useRef([]);
   
   const handleClose = () => {
     Animated.parallel([
@@ -103,23 +106,36 @@ export default function PlayerScreen({ isVisible, onClose }) {
     })
   ).current;
 
+  // Effect to load lyrics when the track changes
   useEffect(() => {
     const loadLyrics = async () => {
+      setLyrics([]);
+      lyricLayoutsRef.current = [];
       setActiveLyricIndex(-1);
+
       if (currentTrack?.lrcUri) {
         setIsLoadingLyrics(true);
         try {
           const lrcContent = await FileSystem.readAsStringAsync(currentTrack.lrcUri);
           setLyrics(parseLRC(lrcContent));
-        } catch (e) { setLyrics([]); } finally { setIsLoadingLyrics(false); }
-      } else { setLyrics([]); }
+        } catch (e) { 
+          setLyrics([]); 
+          console.error("Failed to load or parse lyrics:", e);
+        } finally { 
+          setIsLoadingLyrics(false); 
+        }
+      } else { 
+        setLyrics([]); 
+      }
     };
     loadLyrics();
   }, [currentTrack]);
 
+  // Effect to handle active lyric line and auto-scrolling
   useEffect(() => {
-    if (lyrics.length > 0 && playbackStatus?.isLoaded) {
+    if (lyrics.length > 0 && playbackStatus?.isLoaded && lyricsContainerHeight > 0) {
       const currentPosition = playbackStatus.positionMillis;
+      
       const newIndex = lyrics.findIndex((line, index) => {
         const nextLine = lyrics[index + 1];
         return currentPosition >= line.time && (!nextLine || currentPosition < nextLine.time);
@@ -127,19 +143,17 @@ export default function PlayerScreen({ isVisible, onClose }) {
 
       if (newIndex !== -1 && newIndex !== activeLyricIndex) {
         setActiveLyricIndex(newIndex);
-        if (lyricsScrollViewRef.current && lyricLineRefs.current[newIndex]) {
-            lyricLineRefs.current[newIndex].measureLayout(
-                lyricsScrollViewRef.current.getInnerViewNode(),
-                (x, y) => {
-                    const scrollPosition = y - SCREEN_HEIGHT / 4;
-                    lyricsScrollViewRef.current.scrollTo({ y: scrollPosition, animated: true });
-                },
-                () => {}
-            );
+        
+        const layout = lyricLayoutsRef.current[newIndex];
+        if (lyricsScrollViewRef.current && layout) {
+            // New, more accurate calculation for the scroll position.
+            // It uses the actual height of the lyrics container.
+            const scrollPosition = layout.y - (lyricsContainerHeight / 2) + (layout.height / 2);
+            lyricsScrollViewRef.current.scrollTo({ y: Math.max(0, scrollPosition), animated: true });
         }
       }
     }
-  }, [playbackStatus, lyrics]);
+  }, [playbackStatus, lyrics, activeLyricIndex, lyricsContainerHeight]); // Added lyricsContainerHeight dependency
 
   if (!currentTrack) return null;
 
@@ -167,7 +181,44 @@ export default function PlayerScreen({ isVisible, onClose }) {
           <View style={styles.timeContainer}><Text style={styles.timeText}>{formatTime(playbackStatus?.positionMillis)}</Text><Text style={styles.timeText}>{formatTime(playbackStatus?.durationMillis)}</Text></View>
           <View style={styles.controlsContainer}><TouchableOpacity onPress={playPreviousTrack}><Ionicons name="play-skip-back" size={40} color={AppTheme.colors.text} /></TouchableOpacity><TouchableOpacity style={styles.playButton} onPress={isPlaying ? pauseTrack : resumeTrack}><Ionicons name={isPlaying ? 'pause' : 'play'} size={50} color={AppTheme.colors.background} style={{ marginLeft: isPlaying ? 0 : 4 }} /></TouchableOpacity><TouchableOpacity onPress={playNextTrack}><Ionicons name="play-skip-forward" size={40} color={AppTheme.colors.text} /></TouchableOpacity></View>
         </View>
-        <View style={styles.lyricsSection}>{isLoadingLyrics ? <ActivityIndicator color={AppTheme.colors.primary} /> : lyrics.length > 0 ? <ScrollView ref={lyricsScrollViewRef} showsVerticalScrollIndicator={false} contentContainerStyle={styles.lyricsContent}>{lyrics.map((line, index) => <Text key={index} ref={el => lyricLineRefs.current[index] = el} style={[styles.lyricText, index === activeLyricIndex && styles.activeLyricText]}>{line.text}</Text>)}</ScrollView> : <View style={styles.lyricsPlaceholder}><Text style={styles.lyricText}>No lyrics available.</Text></View>}</View>
+        <View 
+            style={styles.lyricsSection}
+            onLayout={(event) => {
+                // Get the actual height of the lyrics container and store it
+                setLyricsContainerHeight(event.nativeEvent.layout.height);
+            }}
+        >
+          {isLoadingLyrics ? <ActivityIndicator color={AppTheme.colors.primary} /> : lyrics.length > 0 ? (
+            <ScrollView 
+              ref={lyricsScrollViewRef} 
+              showsVerticalScrollIndicator={false} 
+              contentContainerStyle={[
+                  styles.lyricsContent,
+                  // Use the dynamic height to set the initial padding
+                  { paddingTop: lyricsContainerHeight > 0 ? lyricsContainerHeight / 2 : 0 }
+              ]}
+            >
+              {lyrics.map((line, index) => (
+                <Text 
+                  key={index} 
+                  onLayout={(event) => {
+                    lyricLayoutsRef.current[index] = event.nativeEvent.layout;
+                  }}
+                  style={[
+                    styles.lyricText, 
+                    index === activeLyricIndex && styles.activeLyricText
+                  ]}
+                >
+                  {line.text}
+                </Text>
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={styles.lyricsPlaceholder}>
+              <Text style={styles.lyricText}>No lyrics available.</Text>
+            </View>
+          )}
+        </View>
       </SafeAreaView>
     </Animated.View>
   );
@@ -191,7 +242,7 @@ const styles = StyleSheet.create({
   controlsContainer: { flexDirection: 'row', justifyContent: 'space-evenly', alignItems: 'center', marginVertical: 10, width: '100%' },
   playButton: { backgroundColor: AppTheme.colors.text, width: 72, height: 72, borderRadius: 36, justifyContent: 'center', alignItems: 'center' },
   lyricsSection: { flex: 1, padding: 10 },
-  lyricsContent: { paddingBottom: 60 },
+  lyricsContent: { paddingBottom: 60 }, // Removed the fixed padding from here
   lyricsPlaceholder: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   lyricText: { color: '#A0A0A0', fontSize: 18, textAlign: 'center', marginVertical: 8 },
   activeLyricText: { color: AppTheme.colors.text, fontSize: 20, fontWeight: 'bold' },
